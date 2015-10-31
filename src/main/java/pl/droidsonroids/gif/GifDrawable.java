@@ -32,6 +32,7 @@ import android.support.annotation.IntRange;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RawRes;
+import android.support.annotation.WorkerThread;
 import android.widget.MediaController.MediaPlayerControl;
 
 import java.io.File;
@@ -512,6 +513,22 @@ public class GifDrawable extends Drawable implements Animatable, MediaPlayerCont
 		});
 	}
 
+    /**
+     * Like {@link #seekToFrame(int)} but renders synchronously.
+     *
+     * @param position position to seek to in milliseconds
+     * @return Bitmap of the given position.
+     */
+    @WorkerThread
+	public Bitmap seekToSync(@IntRange(from = 0, to = Integer.MAX_VALUE) final int position) {
+		if (position < 0) {
+			throw new IllegalArgumentException("Position is not positive");
+		}
+		mNativeInfoHandle.seekToTime(position, mBuffer);
+
+        return mBuffer;
+	}
+
 	/**
 	 * Like {@link #seekTo(int)} but uses index of the frame instead of time.
 	 * If frameIndex exceeds number of frames, seek stops at the end, no exception is thrown.
@@ -524,12 +541,29 @@ public class GifDrawable extends Drawable implements Animatable, MediaPlayerCont
 			throw new IndexOutOfBoundsException("Frame index is not positive");
 		}
 		mExecutor.execute(new SafeRunnable(this) {
-			@Override
-			public void doWork() {
-				mNativeInfoHandle.seekToFrame(frameIndex, mBuffer);
-				mInvalidationHandler.sendEmptyMessageAtTime(MSG_TYPE_INVALIDATION, 0);
-			}
-		});
+            @Override
+            public void doWork() {
+                mNativeInfoHandle.seekToFrame(frameIndex, mBuffer);
+                mInvalidationHandler.sendEmptyMessageAtTime(MSG_TYPE_INVALIDATION, 0);
+            }
+        });
+	}
+
+    /**
+     * Like {@link #seekToFrame(int)} but renders synchronously.
+     *
+     * @param frameIndex index of the frame to seek to (zero based)
+     * @return Bitmap of the given frame.
+     */
+    @WorkerThread
+	public Bitmap seekToFrameSync(@IntRange(from = 0, to = Integer.MAX_VALUE) final int frameIndex) {
+		if (frameIndex < 0) {
+			throw new IndexOutOfBoundsException("Frame index is not positive");
+		}
+
+		mNativeInfoHandle.seekToFrame(frameIndex, mBuffer);
+
+		return mBuffer;
 	}
 
 	/**
