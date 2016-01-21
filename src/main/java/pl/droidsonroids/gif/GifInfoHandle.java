@@ -4,6 +4,7 @@ import android.content.ContentResolver;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.support.annotation.FloatRange;
 import android.support.annotation.IntRange;
 import android.view.Surface;
 
@@ -38,7 +39,7 @@ final class GifInfoHandle {
     static final GifInfoHandle NULL_INFO = new GifInfoHandle(0, 0, 0, 0);
 
     static {
-        System.loadLibrary("pl_droidsonroids_gif");
+        LibraryLoader.loadLibrary(null, LibraryLoader.BASE_LIBRARY_NAME);
     }
 
     static native GifInfoHandle openFd(FileDescriptor fd, long offset, boolean justDecodeMetaData) throws
@@ -158,7 +159,7 @@ final class GifInfoHandle {
         return getLoopCount(gifInfoPtr);
     }
 
-    void setLoopCount(final int loopCount) {
+    void setLoopCount(@IntRange(from = 0, to = 65535) final int loopCount) {
         if (loopCount < 0 || loopCount > 0xFFFF) {
             throw new IllegalArgumentException("Loop count of range <0, 65535>");
         }
@@ -175,12 +176,12 @@ final class GifInfoHandle {
         return getNativeErrorCode(gifInfoPtr);
     }
 
-    void setSpeedFactor(float factor) {
+    void setSpeedFactor(@FloatRange(from = 0, fromInclusive = false) float factor) {
         if (factor <= 0f || Float.isNaN(factor)) {
             throw new IllegalArgumentException("Speed factor is not positive");
         }
-        if (factor < 1 / Integer.MAX_VALUE) {
-            factor = 1 / Integer.MAX_VALUE;
+        if (factor < 1f / Integer.MAX_VALUE) {
+            factor = 1f / Integer.MAX_VALUE;
         }
         synchronized (this) {
             setSpeedFactor(gifInfoPtr, factor);
@@ -244,10 +245,12 @@ final class GifInfoHandle {
         return restoreSavedState(gifInfoPtr, savedState, mBuffer);
     }
 
-    synchronized int getFrameDuration(final int index) {
+    int getFrameDuration(@IntRange(from = 0) final int index) {
         if (index < 0 || index >= frameCount) {
             throw new IndexOutOfBoundsException("Frame index is out of bounds");
         }
-        return getFrameDuration(gifInfoPtr, index);
+        synchronized (this) {
+            return getFrameDuration(gifInfoPtr, index);
+        }
     }
 }
