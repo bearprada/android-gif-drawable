@@ -1,7 +1,7 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 
 def isDebugBuild() {
-    !gradle.startParameter.taskNames.contains("uploadArchives") && VERSION_NAME.contains("SNAPSHOT")
+    !gradle.startParameter.taskNames.contains("uploadArchives")
 }
 
 def shouldAddFlavors() {
